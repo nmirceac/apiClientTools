@@ -18,7 +18,7 @@ class ApiClientToolsServiceProvider extends ServiceProvider
             }
 
             $this->publishes([
-                __DIR__.'/../config/apiclient.php' => config_path('apiclient.php'),
+                __DIR__.'/../config/api-client.php' => config_path('api-client.php'),
             ], ['config', 'apiclienttools', 'adminify']);
             $this->publishes([
                 __DIR__.'/../stubs/Api/Base.php.stub' => app_path('/Api/Base.php'),
@@ -33,7 +33,7 @@ class ApiClientToolsServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/apiclient.php', 'apiclient');
+        $this->mergeConfigFrom(__DIR__.'/../config/apiclient.php', 'api-client');
 
         $this->app->bind('command.apitools:check', Commands\SetupCommand::class);
         $this->app->bind('command.apitools:build', Commands\DocsCommand::class);
