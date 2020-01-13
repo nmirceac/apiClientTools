@@ -1,4 +1,4 @@
-<?php namespace ApiTools\Commands;
+<?php namespace ApiClientTools\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;

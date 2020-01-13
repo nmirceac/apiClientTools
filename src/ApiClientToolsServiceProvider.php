@@ -33,7 +33,7 @@ class ApiClientToolsServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/apiclient.php', 'api-client');
+        $this->mergeConfigFrom(__DIR__.'/../config/api-client.php', 'api-client');
 
         $this->app->bind('command.apitools:check', Commands\SetupCommand::class);
         $this->app->bind('command.apitools:build', Commands\DocsCommand::class);

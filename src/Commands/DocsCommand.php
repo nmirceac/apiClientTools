@@ -1,4 +1,4 @@
-<?php namespace ApiTools\Commands;
+<?php namespace ApiClientTools\Commands;
 
 use Illuminate\Support\Str;
 use Illuminate\Console\Command;
