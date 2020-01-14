@@ -13,17 +13,14 @@ class ApiClientToolsServiceProvider extends ServiceProvider
     {
         $argv = $this->app->request->server->get('argv');
         if(isset($argv[1]) and $argv[1]=='vendor:publish') {
-            if(!file_exists(app_path('/Api'))) {
-                mkdir(app_path('/Api'));
-            }
-
             $this->publishes([
                 __DIR__.'/../config/api-client.php' => config_path('api-client.php'),
             ], ['config', 'apiclienttools', 'adminify']);
             $this->publishes([
-                __DIR__.'/../stubs/Api/Base.php.stub' => app_path('/Api/Base.php'),
+                __DIR__.'/../stubs/App/Api/Base.php.stub' => app_path('/Api/Base.php'),
             ], ['model', 'apiclienttools', 'adminify']);
         }
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'api-client');
     }
 
     /**
@@ -36,11 +33,11 @@ class ApiClientToolsServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/api-client.php', 'api-client');
 
         $this->app->bind('command.apitools:check', Commands\SetupCommand::class);
-        $this->app->bind('command.apitools:build', Commands\DocsCommand::class);
+        $this->app->bind('command.apitools:publish', Commands\PublishCommand::class);
 
         $this->commands([
             'command.apitools:check',
-            'command.apitools:build',
+            'command.apitools:publish',
         ]);
 
     }

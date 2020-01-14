@@ -1,21 +1,12 @@
 <?php
 
 return [
-    'router'=> [
-        'includeRoutes'=>true,
-        'prefix'=>'api',
-        'namedPrefix'=>'api-tools',
-        'schemaEndpoint'=>'schema',
-        'middleware' => [
-            'api'
-        ],
+    'endpoint'=> [
+        'baseUrl'=>env('API_CLIENT_BASE_URL', null),
+        'secret'=>env('API_CLIENT_SECRET', null),
     ],
 
-    'api' => [
-        'currentVersion'=>'master',
-        'requestHeaders'=>[
-            'x-api-key'=>'some_secret',
-        ]
-    ],
+    'baseNamespace'=>env('API_CLIENT_BASE_NAMESPACE', 'Api'),
+
 ];
 

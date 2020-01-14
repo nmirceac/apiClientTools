@@ -1,10 +1,31 @@
-<?php
-
-namespace App\Api;
+<?php namespace ApiClientTools\App\Api;
 
 class Base
 {
-    public static $apiEndpoint = 'https://admin-collaboration.weanswer.it/';
+    public static $apiBaseUrl = null;
+    public static $baseNamespace = null;
+    public static $pathTrimCharacters = '/ ';
+
+    public static function getApiBaseUrl()
+    {
+        if(is_null(static::$apiBaseUrl)) {
+            static::$apiBaseUrl = trim(config('api-client.endpoint.baseUrl'), self::$pathTrimCharacters);
+        }
+        return static::$apiBaseUrl;
+    }
+
+    public static function getBaseNamespace()
+    {
+        if(is_null(static::$baseNamespace)) {
+            static::$baseNamespace = trim(config('api-client.baseNamespace'));
+        }
+        return static::$baseNamespace;
+    }
+
+    public static function getConfig()
+    {
+        return config('api-client');
+    }
 
     protected static function buildUrl($endpoint, $params=[])
     {
@@ -26,12 +47,7 @@ class Base
 
         $endpoint = str_replace($matched, $values, $endpoint);
 
-        return self::$apiEndpoint.$endpoint;
-    }
-
-    protected static function getRequest($endpoint, $params=[])
-    {
-        return self::processResponse(file_get_contents(self::buildUrl($endpoint, $params)));
+        return self::getApiBaseUrl().'/'.trim($endpoint, static::$pathTrimCharacters);
     }
 
     protected static function processResponse(string $json)
@@ -56,5 +72,10 @@ class Base
         }
 
         return $response['data'];
+    }
+
+    public static function getRequest($endpoint, $params=[])
+    {
+        return self::processResponse(file_get_contents(self::buildUrl($endpoint, $params)));
     }
 }
