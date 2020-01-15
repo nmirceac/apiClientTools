@@ -71,7 +71,34 @@ class Base
             throw new \Exception('The request has no data' , 400);
         }
 
-        return $response['data'];
+
+        $data = $response['data'];
+
+        if(config('api-client.colorTools.autoDetect')) {
+            $data = static::identifyImages($data);
+        }
+
+        return $data;
+    }
+
+    protected static function identifyImages($responseData)
+    {
+        foreach($responseData as $key=>$value)
+        {
+            if(!is_array($value)) {
+                continue;
+            } else {
+                if(isset($value['id']) and isset($value['hash']) and isset($value['type'])
+                    and in_array($value['type'], ['jpeg', 'png']))
+                {
+                    $responseData[$key] = \ApiClientTools\App\ApiImageStore::buildFromArray($value);
+                } else {
+                    $responseData[$key] = static::identifyImages($value);
+                }
+            }
+        }
+
+        return $responseData;
     }
 
     public static function getRequest($endpoint, $params=[])

@@ -2,7 +2,7 @@
     "name": "nmirceac/api-client-tools",
     "type": "library",
     "description": "API Client Tools for Laravel",
-    "keywords": ["api","apiTools", "apiClientTools", "laravel","laravel api"],
+    "keywords": ["api","apiTools", "apiClientTools", "colorTools", "laravel","laravel api"],
     "homepage": "https://github.com/nmirceac/apiClientTools",
     "license": "proprietary",
     "authors": [
@@ -14,7 +14,8 @@
         }
     ],
     "require": {
-        "php": ">=5.4.0"
+        "php": ">=5.4.0",
+        "nmirceac/color-tools": "*"
     },
     "autoload": {
         "psr-4": {
