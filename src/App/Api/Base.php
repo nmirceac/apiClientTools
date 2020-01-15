@@ -92,6 +92,8 @@ class Base
                     and in_array($value['type'], ['jpeg', 'png']))
                 {
                     $responseData[$key] = \ApiClientTools\App\ApiImageStore::buildFromArray($value);
+                } else if($key=='thumbnail' and isset($value['model']) and isset($value['modelId'])) {
+                    $responseData[$key] = \ApiClientTools\App\ApiThumbnail::buildFromArray($value);
                 } else {
                     $responseData[$key] = static::identifyImages($value);
                 }

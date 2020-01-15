@@ -31,6 +31,8 @@ API_CLIENT_COLOR_TOOLS_PUBLIC_PATTERN="images/%hash%"
 
 # 2. Examples
 
+## ColorTools images support
+
 Objects are scanned for \ColorTools\ImageStore objects that are hydrated to a \ApiClientTools\App\ApiImageStore object
 
 ```php
@@ -69,9 +71,9 @@ The objects will have modifying and publishing methods similar to a \ColorTools\
 You can apply modifiers and then publish
 
 ```php
-$thumbnail->\App\Api\Project::get(3)['thumbnail']->url;
-$thumbnail->modifyImage(function(\ColorTools\Image $image) {
-    $image->fit(100, 100);
+$thumbnail=\App\Api\Project::get(3)['thumbnail'];
+$thumbnail->modifyImage(function(\ColorTools\Image $img) {
+    $img->fit(100, 100);
 });
 return $thumbnail->publish();
 // https://admin-collaboration.weanswer.it/images/db16b0f3fe1533135914df5fa455e3c5-ft=100+100.jpeg
@@ -80,9 +82,9 @@ return $thumbnail->publish();
 The modifier is only a mutator that returns the object
 
 ```php
-$thumbnail->\App\Api\Project::get(3)['thumbnail']->url;
-return $thumbnail->modifyImage(function(\ColorTools\Image $image) {
-    $image->fit(100, 100);
+$thumbnail=\App\Api\Project::get(3)['thumbnail'];
+return $thumbnail->modifyImage(function(\ColorTools\Image $img) {
+    $img->fit(100, 100);
 })->publish();
 // https://admin-collaboration.weanswer.it/images/db16b0f3fe1533135914df5fa455e3c5-ft=100+100.jpeg
 ```
@@ -90,9 +92,9 @@ return $thumbnail->modifyImage(function(\ColorTools\Image $image) {
 The publishing format can be overridden
 
 ```php
-$thumbnail->\App\Api\Project::get(3)['thumbnail']->url;
-return $thumbnail->modifyImage(function(\ColorTools\Image $image) {
-    $image->fit(100, 100);
+$thumbnail=\App\Api\Project::get(3)['thumbnail'];
+return $thumbnail->modifyImage(function(\ColorTools\Image $img) {
+    $img->fit(100, 100);
 })->publish('png');
 // https://admin-collaboration.weanswer.it/images/db16b0f3fe1533135914df5fa455e3c5-ft=100+100.png
 ```
@@ -100,9 +102,9 @@ return $thumbnail->modifyImage(function(\ColorTools\Image $image) {
 You can also modify and publish in one go
 
 ```php
-$thumbnail->\App\Api\Project::get(3)['thumbnail']->url;
-$thumbnail->modifyImagePublish(function(\ColorTools\Image $image) {
-    $image->fit(100, 100);
+$thumbnail=\App\Api\Project::get(3)['thumbnail'];
+$thumbnail->modifyImagePublish(function(\ColorTools\Image $img) {
+    $img->fit(100, 100);
 });
 // https://admin-collaboration.weanswer.it/images/db16b0f3fe1533135914df5fa455e3c5-ft=100+100.png
 ```
@@ -110,9 +112,52 @@ $thumbnail->modifyImagePublish(function(\ColorTools\Image $image) {
 And do that while specifying the publishing format
 
 ```php
-$thumbnail->\App\Api\Project::get(3)['thumbnail']->url;
-$thumbnail->modifyImagePublish(function(\ColorTools\Image $image) {
-    $image->fit(100, 100);
+$thumbnail=\App\Api\Project::get(3)['thumbnail'];
+$thumbnail->modifyImagePublish(function(\ColorTools\Image $img) {
+    $img->fit(100, 100);
 }, 'png');
 // https://admin-collaboration.weanswer.it/images/db16b0f3fe1533135914df5fa455e3c5-ft=100+100.png
 ``` 
+
+## Thumbnails support
+
+Non image thumbnails are also supported through a similar syntax.
+Just make sure you remove the typehint as the passed object to the close might not be an image. 
+
+```php
+$thumbnail=\App\Api\Project::get(2)['thumbnail'];
+$thumbnail->modifyImagePublish(function($img) {
+    $img->fit(100, 100);
+});
+// https://admin-collaboration.weanswer.it/thumbnail/project/2-s=100x100.jpeg
+``` 
+
+or
+
+```php
+$thumbnail=\App\Api\Project::get(2)['thumbnail'];
+$thumbnail->modifyImagePublish(function($img) {
+    $img->fit(400, 270);
+}, 'png');
+// https://admin-collaboration.weanswer.it/thumbnail/project/2-s=400x270.png
+``` 
+
+Just note that only the `fit` method is supported at the moment - all the other methods are gracefully ignored
+
+```php
+$thumbnail=\App\Api\Project::get(2)['thumbnail'];
+$thumbnail->modifyImagePublish(function($img) {
+    $img->fit(400, 270);
+    $img->applyFilter(\ColorTools\Image::FILTER_GRAYSCALE);
+});
+// https://admin-collaboration.weanswer.it/thumbnail/project/2-s=400x270.jpeg
+
+$thumbnail=\App\Api\Project::get(4)['thumbnail'];
+$thumbnail->modifyImagePublish(function($img) {
+    $img->fit(400, 270);
+    $img->applyFilter(\ColorTools\Image::FILTER_GRAYSCALE);
+});
+// https://admin-collaboration.weanswer.it/images/45771d1cdfe109aa6e5b3fd48c925ebd-fi=1+-ft=400+270.jpeg
+```
+
+
