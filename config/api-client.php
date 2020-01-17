@@ -8,5 +8,8 @@ return [
 
     'baseNamespace'=>env('API_CLIENT_BASE_NAMESPACE', 'Api'),
 
+    'colorTools'=> [
+        'autoDetect' => env('API_CLIENT_COLOR_TOOLS_AUTODETECT', true),
+        'publicPattern' => env('API_CLIENT_COLOR_TOOLS_PUBLIC_PATTERN', 'images/%hash%'),
+    ],
 ];
-
