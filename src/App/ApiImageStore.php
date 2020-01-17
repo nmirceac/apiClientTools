@@ -7,7 +7,49 @@ use Illuminate\Support\Facades\File as Filesystem;
 
 class ApiImageStore
 {
+    /**
+     * If the user agent accepting webp images
+     * @var boolean
+     */
+    public static $acceptsWebp = null;
+
+    /**
+     * Modifier string for image
+     * @var string
+     */
     public $modifierString = null;
+
+    /**
+     * Checks if the browser accepts webp images
+     * @return boolean
+     */
+    public static function acceptsWebp()
+    {
+        if(is_null(static::$acceptsWebp)) {
+            static::$acceptsWebp = in_array('image/webp', request()->getAcceptableContentTypes());
+        }
+
+        return static::$acceptsWebp;
+    }
+
+    /**
+     * Autodetects and returns the type of image
+     * @param string $type
+     * @return string
+     */
+    public static function autoDetectType($type)
+    {
+        if($type=='auto')
+        {
+            if(static::acceptsWebp()) {
+                $type='webp';
+            } else {
+                $type='jpeg';
+            }
+        }
+
+        return $type;
+    }
 
     /**
      * Returns an image object from an array
@@ -67,7 +109,7 @@ class ApiImageStore
      * @return \ColorTools\Image
      * @throws Exception
      */
-    public function getUrl($transformations = null, $type='jpeg')
+    public function getUrl($transformations = null, $type='auto')
     {
         return $this->getAbsoluteUrl($transformations, $type);
     }
@@ -78,8 +120,10 @@ class ApiImageStore
      * @param string $type
      * @return string
      */
-    public function getRelativeUrl($transformations = null, $type='jpeg')
+    public function getRelativeUrl($transformations = null, $type='auto')
     {
+        $type = static::autoDetectType($type);
+
         return str_replace([
             '%hash_prefix%',
             '%hash%'
@@ -95,7 +139,7 @@ class ApiImageStore
      * @param string $type
      * @return string
      */
-    public function getAbsoluteUrl($transformations = null, $type='jpeg')
+    public function getAbsoluteUrl($transformations = null, $type='auto')
     {
         return \ApiClientTools\App\Api\Base::getApiBaseUrl().'/'.$this->getRelativeUrl($transformations, $type);
     }
@@ -118,7 +162,7 @@ class ApiImageStore
      * @param Modifier closure $closure
      * @return string
      */
-    public function modifyImagePublish($closure = null, $type='jpeg')
+    public function modifyImagePublish($closure = null, $type='auto')
     {
         $this->modifierString = \ColorTools\Store::convertTransformationsToModifierString($closure);
         return $this->publish($type);
@@ -129,7 +173,7 @@ class ApiImageStore
      * @param string $type
      * @return string
      */
-    public function publish($type='jpeg')
+    public function publish($type='auto')
     {
         return $this->getUrl($this->modifierString, $type);
     }
