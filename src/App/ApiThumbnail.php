@@ -23,7 +23,7 @@ class ApiThumbnail
             $image->{$param} = $value;
         }
 
-        $image->url = $image->getUrl('jpeg');
+        $image->url = $image->getUrl(null, 'jpeg');
 
         return $image;
     }
