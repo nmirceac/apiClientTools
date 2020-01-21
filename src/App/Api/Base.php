@@ -83,19 +83,21 @@ class Base
 
     protected static function identifyImages($responseData)
     {
-        foreach($responseData as $key=>$value)
-        {
-            if(!is_array($value)) {
-                continue;
-            } else {
-                if(isset($value['id']) and isset($value['hash']) and isset($value['type'])
-                    and in_array($value['type'], ['jpeg', 'png']))
-                {
-                    $responseData[$key] = \ApiClientTools\App\ApiImageStore::buildFromArray($value);
-                } else if($key=='thumbnail' and isset($value['model']) and isset($value['modelId'])) {
-                    $responseData[$key] = \ApiClientTools\App\ApiThumbnail::buildFromArray($value);
+        if(is_array($responseData)) {
+            foreach($responseData as $key=>$value)
+            {
+                if(!is_array($value)) {
+                    continue;
                 } else {
-                    $responseData[$key] = static::identifyImages($value);
+                    if(isset($value['id']) and isset($value['hash']) and isset($value['type'])
+                        and in_array($value['type'], ['jpeg', 'png']))
+                    {
+                        $responseData[$key] = \ApiClientTools\App\ApiImageStore::buildFromArray($value);
+                    } else if($key=='thumbnail' and isset($value['model']) and isset($value['modelId'])) {
+                        $responseData[$key] = \ApiClientTools\App\ApiThumbnail::buildFromArray($value);
+                    } else {
+                        $responseData[$key] = static::identifyImages($value);
+                    }
                 }
             }
         }
