@@ -101,6 +101,9 @@ class PublishCommand extends Command
     {
         $parametersString = [];
         $methodParamsString = [];
+        $postParamsString = [];
+        $methodPostParamsString = [];
+
         foreach ($method['parameters'] as $parameter) {
             $parametersString[] = $parameter['type'] . ' $' . $parameter['name'];
             $methodParamsString[] = '$' . $parameter['name'];
@@ -114,9 +117,36 @@ class PublishCommand extends Command
             $methodParamsString = ', [' . implode(', ', $methodParamsString) . ']';
         }
 
+        foreach($method['api'] as $parameter=>$value)
+        {
+            if(strpos($parameter, 'postParam')===0) {
+                $postParam = trim(lcfirst(substr($parameter, 9)));
+                $postParamsString[] = '$' . $postParam;
+                $methodPostParamsString[] = '\''.$value.'\'=>$'.$postParam;
+            }
+        }
+
+        if (empty($postParamsString)) {
+            $postParamsString = '$data = []';
+        } else {
+            $postParamsString = implode(', ', $postParamsString).', $data = []';
+        }
+
+        if(!empty($parametersString)) {
+            $postParamsString = ', '.$postParamsString;
+        }
+
+        if (empty($methodPostParamsString)) {
+            $methodPostParamsString = '';
+        } else {
+            $methodPostParamsString = '$data = [' . implode(', ', $methodPostParamsString).'] + $data;';
+        }
+
         return [
             'parametersString'=>$parametersString,
             'methodParametersString'=>$methodParamsString,
+            'postParamsString'=>$postParamsString,
+            'methodPostParamsString'=>$methodPostParamsString,
         ];
     }
 }

@@ -67,14 +67,16 @@ class Base
             throw new \Exception('The request was not successful: #$response[error messages]' , 422);
         }
 
-        if(!isset($response['data'])) {
-            throw new \Exception('The request has no data' , 400);
+        $data = null;
+        if(!isset($response['ack'])) {
+            if(!isset($response['data'])) {
+                throw new \Exception('The request has no data' , 400);
+            }
+
+            $data = $response['data'];
         }
 
-
-        $data = $response['data'];
-
-        if(config('api-client.colorTools.autoDetect')) {
+        if($data and config('api-client.colorTools.autoDetect')) {
             $data = static::identifyImages($data);
         }
 
@@ -105,8 +107,38 @@ class Base
         return $responseData;
     }
 
+    private static function getCurlSession($url)
+    {
+        $session = curl_init($url);
+        curl_setopt ($session, CURLOPT_POST, false);
+        curl_setopt($session, CURLOPT_HTTPHEADER, array(
+            'x-api-key: '.config('api-client.endpoint.secret'),
+        ));
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);
+
+        return $session;
+    }
+
     public static function getRequest($endpoint, $params=[])
     {
-        return self::processResponse(file_get_contents(self::buildUrl($endpoint, $params)));
+        $session = static::getCurlSession(self::buildUrl($endpoint, $params));
+        $response = curl_exec($session);
+        curl_close($session);
+
+        return self::processResponse($response);
+    }
+
+    public static function postRequest($endpoint, $params=[], $data=[])
+    {
+        $session = static::getCurlSession(self::buildUrl($endpoint, $params));
+        curl_setopt ($session, CURLOPT_POST, true);
+        if(!empty($data)) {
+            curl_setopt ($session, CURLOPT_POSTFIELDS, $data);
+        }
+        $response = curl_exec($session);
+        curl_close($session);
+
+        return self::processResponse($response);
     }
 }
