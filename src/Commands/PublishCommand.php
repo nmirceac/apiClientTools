@@ -112,7 +112,11 @@ class PublishCommand extends Command
         $parametersString = implode(', ', $parametersString);
 
         if (empty($methodParamsString)) {
-            $methodParamsString = '';
+            if(in_array('POST', $method['route']['accepts'])) {
+                $methodParamsString = ', []';
+            } else {
+                $methodParamsString = '';
+            }
         } else {
             $methodParamsString = ', [' . implode(', ', $methodParamsString) . ']';
         }
@@ -126,27 +130,39 @@ class PublishCommand extends Command
             }
         }
 
+        // post arguments of the published method
         if (empty($postParamsString)) {
             $postParamsString = '$data = []';
         } else {
             $postParamsString = implode(', ', $postParamsString).', $data = []';
         }
 
+        // arguments of the published method
         if(!empty($parametersString)) {
             $postParamsString = ', '.$postParamsString;
         }
 
+        // in body of the method
         if (empty($methodPostParamsString)) {
             $methodPostParamsString = '';
         } else {
             $methodPostParamsString = '$data = [' . implode(', ', $methodPostParamsString).'] + $data;';
         }
 
+        if(0 and $method['name'] == 'create') {
+            dd([
+                'parametersString'=>$parametersString, // arguments of the published method
+                'postParamsString'=>$postParamsString, // post arguments of the published method
+                'methodPostParamsString'=>$methodPostParamsString, // in the body of the method
+                'methodParametersString'=>$methodParamsString, // arguments of the invoked method
+            ]);
+        }
+
         return [
-            'parametersString'=>$parametersString,
-            'methodParametersString'=>$methodParamsString,
-            'postParamsString'=>$postParamsString,
-            'methodPostParamsString'=>$methodPostParamsString,
+            'parametersString'=>$parametersString, // arguments of the published method
+            'postParamsString'=>$postParamsString, // post arguments of the published method
+            'methodPostParamsString'=>$methodPostParamsString, // in the body of the method
+            'methodParametersString'=>$methodParamsString, // arguments of the invoked method
         ];
     }
 }

@@ -50,10 +50,15 @@ class Base
         return self::getApiBaseUrl().'/'.trim($endpoint, static::$pathTrimCharacters);
     }
 
-    protected static function processResponse(string $json)
+    protected static function processResponse(string $json, $responseInfo = [])
     {
         if(empty($json)) {
             throw new \Exception('The request data is empty', 0);
+        }
+
+        if($responseInfo['http_code']=='500' and config('api-client.debug', false)) {
+            echo $json;
+            exit();
         }
 
         $response = json_decode($json, true);
@@ -64,15 +69,15 @@ class Base
         }
 
         if(!$response['success']) {
-            throw new \Exception('The request was not successful: #$response[error messages]' , 422);
+            throw new \Exception(static::class.' API request exception '.$responseInfo['http_code'].': '.$response['message'], $responseInfo['http_code']);
         }
 
         $data = null;
-        if(!isset($response['ack'])) {
-            if(!isset($response['data'])) {
+        if(!array_key_exists('data', $response)) {
+            if(!isset($response['ack'])) {
                 throw new \Exception('The request has no data' , 400);
             }
-
+        } else {
             $data = $response['data'];
         }
 
@@ -113,6 +118,7 @@ class Base
         curl_setopt ($session, CURLOPT_POST, false);
         curl_setopt($session, CURLOPT_HTTPHEADER, array(
             'x-api-key: '.config('api-client.endpoint.secret'),
+            'content-type: application/json',
         ));
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);
@@ -124,9 +130,10 @@ class Base
     {
         $session = static::getCurlSession(self::buildUrl($endpoint, $params));
         $response = curl_exec($session);
+        $responseInfo = curl_getinfo($session);
         curl_close($session);
 
-        return self::processResponse($response);
+        return self::processResponse($response, $responseInfo);
     }
 
     public static function postRequest($endpoint, $params=[], $data=[])
@@ -134,11 +141,12 @@ class Base
         $session = static::getCurlSession(self::buildUrl($endpoint, $params));
         curl_setopt ($session, CURLOPT_POST, true);
         if(!empty($data)) {
-            curl_setopt ($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt ($session, CURLOPT_POSTFIELDS, json_encode($data));
         }
         $response = curl_exec($session);
+        $responseInfo = curl_getinfo($session);
         curl_close($session);
 
-        return self::processResponse($response);
+        return self::processResponse($response, $responseInfo);
     }
 }
