@@ -116,10 +116,16 @@ class Base
     {
         $session = curl_init($url);
         curl_setopt ($session, CURLOPT_POST, false);
-        curl_setopt($session, CURLOPT_HTTPHEADER, array(
-            'x-api-key: '.config('api-client.endpoint.secret'),
-            'content-type: application/json',
-        ));
+
+        $requestHeader[] = 'x-api-key: '.config('api-client.endpoint.secret');
+        $requestHeader[] = 'content-type: application/json';
+
+        $sessionId = \Session::get((\Auth::guard('web')->getName()));
+        if(config('api-client.sendAuth') and $sessionId) {
+            $requestHeader[] = 'x-auth-id: '.$sessionId;
+        }
+
+        curl_setopt($session, CURLOPT_HTTPHEADER, $requestHeader);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);
 

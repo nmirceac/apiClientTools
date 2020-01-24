@@ -6,6 +6,7 @@ return [
         'secret'=>env('API_CLIENT_SECRET', null),
     ],
 
+    'sendAuth'=>env('API_CLIENT_SEND_AUTH', true),
     'debug'=>env('API_CLIENT_DEBUG', false),
 
     'baseNamespace'=>env('API_CLIENT_BASE_NAMESPACE', 'Api'),
