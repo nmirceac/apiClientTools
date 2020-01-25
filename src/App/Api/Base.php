@@ -27,6 +27,15 @@ class Base
         return config('api-client');
     }
 
+    /**
+     * Returns current page for paginator
+     * @return int
+     */
+    public static function page()
+    {
+        return \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
+    }
+
     protected static function buildUrl($endpoint, $params=[])
     {
         $matched=[];
@@ -65,7 +74,12 @@ class Base
         if(is_null($response)) {
             $errorMessage = json_last_error_msg();
             $errorCode = '10'.json_last_error();
-            throw new \Exception('JSON parsing error: "'.$errorMessage.'" - JSON content:'.substr($json, 0, 64), $errorCode);
+            if(config('api-client.debug', false)) {
+                echo $json;
+                exit();
+            } else {
+                throw new \Exception('JSON parsing error: "'.$errorMessage.'" - JSON content:'.substr($json, 0, 64), $errorCode);
+            }
         }
 
         if(!$response['success']) {
@@ -81,21 +95,30 @@ class Base
             $data = $response['data'];
         }
 
-        if($data and config('api-client.colorTools.autoDetect')) {
-            $data = static::identifyImages($data);
+        if($data) {
+            $data = static::identifyObjects($data);
         }
 
         return $data;
     }
 
-    protected static function identifyImages($responseData)
+    protected static function identifyObjects($responseData)
     {
+        $autoDetectColorTools = config('api-client.colorTools.autoDetect');
+
         if(is_array($responseData)) {
+            $responseData = self::buildPaginationFromArray($responseData);
+
             foreach($responseData as $key=>$value)
             {
                 if(!is_array($value)) {
                     continue;
                 } else {
+                    $responseData[$key] = self::buildPaginationFromArray($value);
+                    if(!$autoDetectColorTools) {
+                        continue;
+                    }
+
                     if(isset($value['id']) and isset($value['hash']) and isset($value['type'])
                         and in_array($value['type'], ['jpeg', 'png']))
                     {
@@ -103,13 +126,49 @@ class Base
                     } else if($key=='thumbnail' and isset($value['model']) and isset($value['modelId'])) {
                         $responseData[$key] = \ApiClientTools\App\ApiThumbnail::buildFromArray($value);
                     } else {
-                        $responseData[$key] = static::identifyImages($value);
+                        $responseData[$key] = static::identifyObjects($value);
                     }
                 }
             }
         }
 
         return $responseData;
+    }
+
+    protected static function checkIfPaginationArray($paginationArray)
+    {
+        if(!is_array($paginationArray)) {
+            return false;
+        }
+        if(empty($paginationArray)) {
+            return false;
+        }
+
+        if(
+            isset($paginationArray['data']) and
+            isset($paginationArray['total']) and
+            isset($paginationArray['per_page']) and
+            isset($paginationArray['current_page'])
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected static function buildPaginationFromArray($paginationArray, $options=array())
+    {
+        if(self::checkIfPaginationArray($paginationArray)) {
+            $options = ['path'=>\Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPath()] + $options;
+            return new \Illuminate\Pagination\LengthAwarePaginator(
+                $paginationArray['data'],
+                $paginationArray['total'],
+                $paginationArray['per_page'],
+                $paginationArray['current_page'],
+                $options
+            );
+        }
+        return $paginationArray;
     }
 
     private static function getCurlSession($url)

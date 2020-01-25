@@ -105,7 +105,16 @@ class PublishCommand extends Command
         $methodPostParamsString = [];
 
         foreach ($method['parameters'] as $parameter) {
-            $parametersString[] = $parameter['type'] . ' $' . $parameter['name'];
+            $parameterString = $parameter['type'] . ' $' . $parameter['name'];
+            if($parameter['default']) {
+                if($parameter['type']=='string') {
+                    $parameterString.='=\''.$parameter['default'].'\'';
+                } else {
+                    $parameterString.='='.$parameter['default'];
+                }
+            }
+
+            $parametersString[] = $parameterString;
             $methodParamsString[] = '$' . $parameter['name'];
         }
 
