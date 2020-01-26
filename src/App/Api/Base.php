@@ -5,6 +5,38 @@ class Base
     public static $apiBaseUrl = null;
     public static $baseNamespace = null;
     public static $pathTrimCharacters = '/ ';
+    public static $caching = null;
+    public static $reCaching = false;
+
+    protected static function getCacheTimeout()
+    {
+        if(is_null(static::$caching)) {
+            return (int) config('api-client.caching');
+        }
+
+        return self::$caching;
+    }
+
+    public static function withoutCache()
+    {
+        self::$caching = (int) 0;
+        return new static;
+    }
+
+    public static function withCache(int $timeout = null)
+    {
+        if(is_null($timeout)) {
+            $timeout = config('api-client.caching');
+        }
+        self::$caching = (int) $timeout;
+        return new static;
+    }
+
+    public static function recache()
+    {
+        self::$reCaching = true;
+        return new static;
+    }
 
     public static function getApiBaseUrl()
     {
@@ -193,12 +225,33 @@ class Base
 
     public static function getRequest($endpoint, $params=[])
     {
-        $session = static::getCurlSession(self::buildUrl($endpoint, $params));
-        $response = curl_exec($session);
-        $responseInfo = curl_getinfo($session);
-        curl_close($session);
+        $start=microtime(true);
+        $caching = static::getCacheTimeout();
 
-        return self::processResponse($response, $responseInfo);
+        $response = null;
+        if($caching)
+        {
+            $cacheKey = 'apiGet-'.json_encode([$endpoint, $params]);
+            if(!self::$reCaching) {
+                $response = \Cache::get($cacheKey);
+            }
+        }
+
+        if(is_null($response)) {
+            $session = static::getCurlSession(self::buildUrl($endpoint, $params));
+            $response = curl_exec($session);
+            $responseInfo = curl_getinfo($session);
+            curl_close($session);
+
+            $response = self::processResponse($response, $responseInfo);
+            if($caching) {
+                \Cache::put($cacheKey, $response, $caching);
+            }
+        }
+
+        $endtime = microtime(true) - $start;
+
+        return $response;
     }
 
     public static function postRequest($endpoint, $params=[], $data=[])

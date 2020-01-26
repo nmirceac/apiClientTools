@@ -7,6 +7,8 @@ return [
     ],
 
     'sendAuth'=>env('API_CLIENT_SEND_AUTH', true),
+    'caching'=>env('API_CLIENT_CACHE_TIMEOUT', 0),
+
     'debug'=>env('API_CLIENT_DEBUG', false),
 
     'baseNamespace'=>env('API_CLIENT_BASE_NAMESPACE', 'Api'),
