@@ -68,7 +68,7 @@ class Base
         return \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
     }
 
-    protected static function buildUrl($endpoint, $params=[])
+    protected static function buildUrl($endpoint, $params=[], $data=[])
     {
         $matched=[];
         $values=[];
@@ -87,6 +87,15 @@ class Base
         }
 
         $endpoint = str_replace($matched, $values, $endpoint);
+
+        if(!empty($data)) {
+            $data = http_build_query($data);
+            if(strpos($endpoint, '?')!==false) {
+                $endpoint.='&'.$data;
+            } else {
+                $endpoint.='?'.$data;
+            }
+        }
 
         return self::getApiBaseUrl().'/'.trim($endpoint, static::$pathTrimCharacters);
     }
@@ -223,7 +232,7 @@ class Base
         return $session;
     }
 
-    public static function getRequest($endpoint, $params=[])
+    public static function getRequest($endpoint, $params=[], $data=[])
     {
         $start=microtime(true);
         $caching = static::getCacheTimeout();
@@ -231,14 +240,14 @@ class Base
         $response = null;
         if($caching)
         {
-            $cacheKey = 'apiGet-'.json_encode([$endpoint, $params]);
+            $cacheKey = 'apiGet-'.json_encode([$endpoint, $params, $data]);
             if(!self::$reCaching) {
                 $response = \Cache::get($cacheKey);
             }
         }
 
         if(is_null($response)) {
-            $session = static::getCurlSession(self::buildUrl($endpoint, $params));
+            $session = static::getCurlSession(self::buildUrl($endpoint, $params, $data));
             $response = curl_exec($session);
             $responseInfo = curl_getinfo($session);
             curl_close($session);

@@ -11,7 +11,10 @@
     */
     public static function {{ $method['name'] }}({{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['parametersString'] }})
     {
-        return self::getRequest('{{ $method['route']['uri'] }}'{{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodParametersString'] }});
+@if(!empty(\ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodBodyContent']))
+        {!! \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodBodyContent'] !!}
+@endif
+        return self::getRequest('{{ $method['route']['uri'] }}'{{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodParametersString'] }}, $data);
     }
 @elseif(in_array('POST', $method['route']['accepts']))
     /**
@@ -26,9 +29,9 @@
     */
     public static function {{ $method['name'] }}({{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['parametersString'] }}{{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['postParamsString'] }})
     {
-@if(!empty(\ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodPostParamsString']))
-        {!! \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodPostParamsString'] !!}
+@if(!empty(\ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodBodyContent']))
+        {!! \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodBodyContent'] !!}
 @endif
-        return self::postRequest('{{ $method['route']['uri'] }}'{{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodParametersString'] }}, $data);
+        return self::postRequest('{{ $method['route']['uri'] }}'{{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodParametersString'] }});
     }
 @endif

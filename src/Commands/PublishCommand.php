@@ -62,10 +62,10 @@ class PublishCommand extends Command
         $modelFiles = glob($this->getApiModelsDirectoryPath() . '/*.php');
         foreach ($modelFiles as $filePath) {
             $className = substr($filePath, 1 + strrpos($filePath, '/'), -4);
-            //$class = '\App\\'.$this->baseNameSpace.'\\'.$className;
             $content = file_get_contents($filePath);
             if (strpos($content, '@apiHash')) {
                 $this->error('Removing class ' . $className);
+                unlink($filePath);
             }
         }
     }
@@ -118,14 +118,14 @@ class PublishCommand extends Command
             $methodParamsString[] = '$' . $parameter['name'];
         }
 
+        if(!in_array('POST', $method['route']['accepts'])) {
+            $parametersString[] = 'array $data=[]';
+        }
+
         $parametersString = implode(', ', $parametersString);
 
         if (empty($methodParamsString)) {
-            if(in_array('POST', $method['route']['accepts'])) {
-                $methodParamsString = ', []';
-            } else {
-                $methodParamsString = '';
-            }
+            $methodParamsString = ', []';
         } else {
             $methodParamsString = ', [' . implode(', ', $methodParamsString) . ']';
         }
@@ -141,14 +141,18 @@ class PublishCommand extends Command
 
         // post arguments of the published method
         if (empty($postParamsString)) {
-            $postParamsString = '$data = []';
+            $postParamsString = 'array $data = []';
         } else {
-            $postParamsString = implode(', ', $postParamsString).', $data = []';
+            $postParamsString = implode(', ', $postParamsString).', array $data = []';
         }
 
         // arguments of the published method
         if(!empty($parametersString)) {
             $postParamsString = ', '.$postParamsString;
+        }
+
+        if(isset($method['api']['supportsPagination']) and $method['api']['supportsPagination']) {
+            $methodPostParamsString[] = '\'page\'=>\ApiClientTools\App\Api\Base::page()';
         }
 
         // in body of the method
@@ -158,19 +162,10 @@ class PublishCommand extends Command
             $methodPostParamsString = '$data = [' . implode(', ', $methodPostParamsString).'] + $data;';
         }
 
-        if(0 and $method['name'] == 'create') {
-            dd([
-                'parametersString'=>$parametersString, // arguments of the published method
-                'postParamsString'=>$postParamsString, // post arguments of the published method
-                'methodPostParamsString'=>$methodPostParamsString, // in the body of the method
-                'methodParametersString'=>$methodParamsString, // arguments of the invoked method
-            ]);
-        }
-
         return [
             'parametersString'=>$parametersString, // arguments of the published method
             'postParamsString'=>$postParamsString, // post arguments of the published method
-            'methodPostParamsString'=>$methodPostParamsString, // in the body of the method
+            'methodBodyContent'=>$methodPostParamsString, // in the body of the method
             'methodParametersString'=>$methodParamsString, // arguments of the invoked method
         ];
     }
