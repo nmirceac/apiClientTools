@@ -32,6 +32,6 @@
 @if(!empty(\ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodBodyContent']))
         {!! \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodBodyContent'] !!}
 @endif
-        return self::postRequest('{{ $method['route']['uri'] }}'{{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodParametersString'] }});
+        return self::postRequest('{{ $method['route']['uri'] }}'{{ \ApiClientTools\Commands\PublishCommand::getParametersStrings($method)['methodParametersString'] }}, $data);
     }
 @endif
