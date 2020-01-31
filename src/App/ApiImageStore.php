@@ -44,7 +44,7 @@ class ApiImageStore
             if(static::acceptsWebp()) {
                 $type='webp';
             } else {
-                $type='jpeg';
+                $type='auto';
             }
         }
 
@@ -123,6 +123,10 @@ class ApiImageStore
     public function getRelativeUrl($transformations = null, $type='auto')
     {
         $type = static::autoDetectType($type);
+
+        if($type=='auto') {
+            $type = $this->type;
+        }
 
         return str_replace([
             '%hash_prefix%',
