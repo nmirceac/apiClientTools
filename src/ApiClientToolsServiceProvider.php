@@ -11,6 +11,10 @@ class ApiClientToolsServiceProvider extends ServiceProvider
      */
     public function boot(\Illuminate\Routing\Router $router)
     {
+        \Auth::provider('api-client', function ($app) {
+            return new App\ApiClientUserProvider();
+        });
+
         $argv = $this->app->request->server->get('argv');
         if(isset($argv[1]) and $argv[1]=='vendor:publish') {
             $this->publishes([
@@ -18,6 +22,7 @@ class ApiClientToolsServiceProvider extends ServiceProvider
             ], ['config', 'apiclienttools', 'adminify']);
             $this->publishes([
                 __DIR__.'/../stubs/App/Api/Base.php.stub' => app_path('/Api/Base.php'),
+                __DIR__.'/../stubs/App/User.php.stub' => app_path('/User.php'),
             ], ['model', 'apiclienttools', 'adminify']);
         }
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'api-client');

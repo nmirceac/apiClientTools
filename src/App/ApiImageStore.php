@@ -52,6 +52,48 @@ class ApiImageStore
     }
 
     /**
+     * Returns webp path if supported by the user agent
+     * @param $publicPath
+     * @return string
+     */
+    public static function autoConvertStaticImage($publicPath)
+    {
+        if(!self::acceptsWebp()) {
+            return $publicPath;
+        }
+
+        if(strtolower(substr($publicPath, -5)) == '.webp') {
+            return $publicPath;
+        }
+
+        if(strpos($publicPath, '.')===false) {
+            return $publicPath;
+        }
+
+        $absolutePath = public_path($publicPath);
+        if(!file_exists($absolutePath)) {
+            return $publicPath;
+        } else {
+            $webpPublicPath = substr($publicPath, 0, strrpos($publicPath, '.')).'.webp';
+            $webpAbsolutePath = public_path($webpPublicPath);
+            if(file_exists($webpAbsolutePath)) {
+                return $webpPublicPath;
+            }
+
+            $image = \ColorTools\Image::create($absolutePath)->getImageObject();
+            imagewebp($image, $webpAbsolutePath, 80);
+
+            if(file_exists($webpAbsolutePath)) {
+                return $webpPublicPath;
+            }
+        }
+
+        return $publicPath;
+    }
+
+
+
+    /**
      * Returns an image object from an array
      * @param $id
      * @return \ApiClientTools\App\ApiImageStore

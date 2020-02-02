@@ -1,0 +1,17 @@
+<?php
+
+namespace App;
+
+class User extends \ApiClientTools\App\User
+{
+    // sample
+
+    public function sendLoginEmail()
+    {
+        $context['name'] = $this->full_name; // used in the view
+        $context['subject'] = 'Your '.config('app.name').' login link'; // optional
+        $context['to'] = $this->email; // optional
+        $context['loginLink'] = route('authByIdentifier', $this->getIdentifier());
+        return \App\Api\Email::send('loginLink', $context);
+    }
+}
