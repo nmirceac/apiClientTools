@@ -2,7 +2,7 @@
 
 class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authenticatable
 {
-    private $authIdentifierName = 'id';
+    public $authIdentifierName = 'id';
 
     public static function getAuth($id)
     {
@@ -10,9 +10,9 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
             return null;
         }
 
-        $auth = new self();
+        $auth = new static();
         try {
-            $user = self::getAuthData($id);
+            $user = static::getAuthData($id);
         } catch (\Exception $e) {
             $user = null;
         }
@@ -35,9 +35,9 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
             return null;
         }
 
-        $auth = new self();
+        $auth = new static();
         try {
-            $user = self::getAuthDataByEmail($email);
+            $user = static::getAuthDataByEmail($email);
         } catch (\Exception $e) {
             $user = null;
         }
@@ -89,7 +89,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
 
     public function retrieveById($identifier)
     {
-        return self::getAuth($identifier);
+        return static::getAuth($identifier);
     }
 
     /**
@@ -107,7 +107,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
      */
     public function getAuthPassword()
     {
-        return self::getAuthDataPassword($this->id);
+        return static::getAuthDataPassword($this->{$this->authIdentifierName});
     }
 
     /**
@@ -119,7 +119,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
         if(isset($this->remember_token)) {
             return $this->remember_token;
         }
-        return self::getAuthDataToken($this->id);
+        return static::getAuthDataToken($this->{$this->authIdentifierName});
     }
 
     /**
@@ -128,7 +128,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
      */
     public function setRememberToken($value)
     {
-        return self::setToken($this->id, $value);
+        return static::setToken($this->{$this->authIdentifierName}, $value);
     }
 
     /**
@@ -142,9 +142,9 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
 
     public static function create($payload = [])
     {
-        $user = self::createFromPayload($payload);
+        $user = static::createFromPayload($payload);
         if($user) {
-            return self::getAuth($user['id']);
+            return static::getAuth($user['id']);
         }
     }
 
@@ -162,7 +162,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
                 $payload[$param] = $this->{$param};
             }
         }
-        return self::updateFromPayload($this->id, $payload);
+        return static::updateFromPayload($this->{$this->authIdentifierName}, $payload);
     }
 
     public function save()
@@ -197,7 +197,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
 
     public function getIdentifier()
     {
-        return $this->id.md5($this->id.'-'.$this->created_at);
+        return $this->{$this->authIdentifierName}.md5($this->{$this->authIdentifierName}.'-'.$this->created_at);
     }
 
     public static function getByIdentifier(string $identifier)
@@ -207,7 +207,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
         }
 
         $id = substr($identifier, 0, -32);
-        $user = self::getAuth($id);
+        $user = static::getAuth($id);
 
         if (!$user) {
             throw new \Exception('Wrong identifier');
