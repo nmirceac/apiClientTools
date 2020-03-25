@@ -83,7 +83,7 @@ class Base
             }
 
             $matched[] = $match;
-            $values[] = $value;
+            $values[] = rawurlencode($value);
         }
 
         $endpoint = str_replace($matched, $values, $endpoint);
