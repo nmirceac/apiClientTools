@@ -11,7 +11,7 @@ class Base
     protected static function getCacheTimeout()
     {
         if(is_null(static::$caching)) {
-            return (int) config('api-client.caching');
+            return (int) static::getConfig()['caching'];
         }
 
         return self::$caching;
@@ -26,7 +26,7 @@ class Base
     public static function withCache(int $timeout = null)
     {
         if(is_null($timeout)) {
-            $timeout = config('api-client.caching');
+            $timeout = self::getCacheTimeout();
         }
         self::$caching = (int) $timeout;
         return new static;
@@ -41,7 +41,7 @@ class Base
     public static function getApiBaseUrl()
     {
         if(is_null(static::$apiBaseUrl)) {
-            static::$apiBaseUrl = trim(config('api-client.endpoint.baseUrl'), self::$pathTrimCharacters);
+            static::$apiBaseUrl = trim(static::getConfig()['endpoint']['baseUrl'], self::$pathTrimCharacters);
         }
         return static::$apiBaseUrl;
     }
@@ -49,7 +49,7 @@ class Base
     public static function getBaseNamespace()
     {
         if(is_null(static::$baseNamespace)) {
-            static::$baseNamespace = trim(config('api-client.baseNamespace'));
+            static::$baseNamespace = trim(static::getConfig()['api-client']['baseNamespace']);
         }
         return static::$baseNamespace;
     }
@@ -106,7 +106,7 @@ class Base
             throw new \Exception('The request data is empty', 0);
         }
 
-        if($responseInfo['http_code']=='500' and config('api-client.debug', false)) {
+        if($responseInfo['http_code']=='500' and static::getConfig()['debug']) {
             echo $json;
             exit();
         }
@@ -115,7 +115,7 @@ class Base
         if(is_null($response)) {
             $errorMessage = json_last_error_msg();
             $errorCode = '10'.json_last_error();
-            if(config('api-client.debug', false)) {
+            if(static::getConfig()['debug']) {
                 echo $json;
                 exit();
             } else {
@@ -145,7 +145,7 @@ class Base
 
     protected static function identifyObjects($responseData)
     {
-        $autoDetectColorTools = config('api-client.colorTools.autoDetect');
+        $autoDetectColorTools = static::getConfig()['colorTools']['autoDetect'];
 
         if(is_array($responseData)) {
             $responseData = self::buildPaginationFromArray($responseData);
@@ -217,11 +217,11 @@ class Base
         $session = curl_init($url);
         curl_setopt ($session, CURLOPT_POST, false);
 
-        $requestHeader[] = 'x-api-key: '.config('api-client.endpoint.secret');
+        $requestHeader[] = 'x-api-key: '.static::getConfig()['endpoint']['secret'];
         $requestHeader[] = 'content-type: application/json';
 
         $sessionId = \Session::get((\Auth::guard('web')->getName()));
-        if(config('api-client.sendAuth') and $sessionId) {
+        if(static::getConfig()['sendAuth'] and $sessionId) {
             $requestHeader[] = 'x-auth-id: '.$sessionId;
         }
 
