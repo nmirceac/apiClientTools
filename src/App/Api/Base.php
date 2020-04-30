@@ -49,7 +49,7 @@ class Base
     public static function getBaseNamespace()
     {
         if(is_null(static::$baseNamespace)) {
-            static::$baseNamespace = trim(static::getConfig()['api-client']['baseNamespace']);
+            static::$baseNamespace = trim(static::getConfig()['baseNamespace']);
         }
         return static::$baseNamespace;
     }
