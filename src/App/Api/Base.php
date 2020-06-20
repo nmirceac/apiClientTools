@@ -11,7 +11,7 @@ class Base
     protected static function getCacheTimeout()
     {
         if(is_null(static::$caching)) {
-            return (int) static::getConfig()['caching'];
+            return (int) config('api-client.caching');
         }
 
         return self::$caching;
@@ -26,7 +26,7 @@ class Base
     public static function withCache(int $timeout = null)
     {
         if(is_null($timeout)) {
-            $timeout = self::getCacheTimeout();
+            $timeout = config('api-client.caching');
         }
         self::$caching = (int) $timeout;
         return new static;
@@ -41,7 +41,7 @@ class Base
     public static function getApiBaseUrl()
     {
         if(is_null(static::$apiBaseUrl)) {
-            static::$apiBaseUrl = trim(static::getConfig()['endpoint']['baseUrl'], self::$pathTrimCharacters);
+            static::$apiBaseUrl = trim(config('api-client.endpoint.baseUrl'), self::$pathTrimCharacters);
         }
         return static::$apiBaseUrl;
     }
@@ -49,7 +49,7 @@ class Base
     public static function getBaseNamespace()
     {
         if(is_null(static::$baseNamespace)) {
-            static::$baseNamespace = trim(static::getConfig()['baseNamespace']);
+            static::$baseNamespace = trim(config('api-client.baseNamespace'));
         }
         return static::$baseNamespace;
     }
@@ -103,10 +103,10 @@ class Base
     protected static function processResponse(string $json, $responseInfo = [])
     {
         if(empty($json)) {
-            throw new \Exception('The request data is empty', 0);
+            throw new \ApiClientTools\Exception('The response data is empty', 0, $json, ['responseInfo'=>$responseInfo]);
         }
 
-        if($responseInfo['http_code']=='500' and static::getConfig()['debug']) {
+        if($responseInfo['http_code']=='500' and config('api-client.debug', false)) {
             echo $json;
             exit();
         }
@@ -115,22 +115,30 @@ class Base
         if(is_null($response)) {
             $errorMessage = json_last_error_msg();
             $errorCode = '10'.json_last_error();
-            if(static::getConfig()['debug']) {
+            if(config('api-client.debug', false)) {
                 echo $json;
                 exit();
             } else {
-                throw new \Exception('JSON parsing error: "'.$errorMessage.'" - JSON content:'.substr($json, 0, 64), $errorCode);
+                throw new \ApiClientTools\Exception('JSON parsing error: "'.$errorMessage.'"', $errorCode, $json, ['responseInfo'=>$responseInfo]);
             }
         }
 
         if(!$response['success']) {
-            throw new \Exception(static::class.' API request exception '.$responseInfo['http_code'].': '.$response['message'], $responseInfo['http_code']);
+            if(isset($response['data'])) {
+                $data = $response['data'];
+            } else {
+                $data = [];
+            }
+            $data['errorMessage'] = $response['message'];
+            $data['responseInfo'] = $responseInfo;
+
+            throw new \ApiClientTools\Exception(static::class.' API response exception '.$responseInfo['http_code'].': '.$response['message'], $responseInfo['http_code'], $json, $data);
         }
 
         $data = null;
         if(!array_key_exists('data', $response)) {
             if(!isset($response['ack'])) {
-                throw new \Exception('The request has no data' , 400);
+                throw new \ApiClientTools\Exception('The response has no data - please use sendAck for post methods' , 400, $json, ['responseInfo'=>$responseInfo]);
             }
         } else {
             $data = $response['data'];
@@ -145,7 +153,7 @@ class Base
 
     protected static function identifyObjects($responseData)
     {
-        $autoDetectColorTools = static::getConfig()['colorTools']['autoDetect'];
+        $autoDetectColorTools = config('api-client.colorTools.autoDetect');
 
         if(is_array($responseData)) {
             $responseData = self::buildPaginationFromArray($responseData);
@@ -217,11 +225,11 @@ class Base
         $session = curl_init($url);
         curl_setopt ($session, CURLOPT_POST, false);
 
-        $requestHeader[] = 'x-api-key: '.static::getConfig()['endpoint']['secret'];
+        $requestHeader[] = 'x-api-key: '.config('api-client.endpoint.secret');
         $requestHeader[] = 'content-type: application/json';
 
         $sessionId = \Session::get((\Auth::guard('web')->getName()));
-        if(static::getConfig()['sendAuth'] and $sessionId) {
+        if(config('api-client.sendAuth') and $sessionId) {
             $requestHeader[] = 'x-auth-id: '.$sessionId;
         }
 
