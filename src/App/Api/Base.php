@@ -2,8 +2,6 @@
 
 class Base
 {
-    public static $apiBaseUrl = null;
-    public static $baseNamespace = null;
     public static $pathTrimCharacters = '/ ';
     public static $caching = null;
     public static $reCaching = false;
@@ -40,18 +38,12 @@ class Base
 
     public static function getApiBaseUrl()
     {
-        if(is_null(static::$apiBaseUrl)) {
-            static::$apiBaseUrl = trim(static::getConfig()['endpoint']['baseUrl'], self::$pathTrimCharacters);
-        }
-        return static::$apiBaseUrl;
+        return trim(static::getConfig()['endpoint']['baseUrl'], self::$pathTrimCharacters);
     }
 
     public static function getBaseNamespace()
     {
-        if(is_null(static::$baseNamespace)) {
-            static::$baseNamespace = trim(static::getConfig()['baseNamespace']);
-        }
-        return static::$baseNamespace;
+        return trim(static::getConfig()['baseNamespace']);
     }
 
     public static function getConfig()
