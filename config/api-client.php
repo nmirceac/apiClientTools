@@ -11,6 +11,8 @@ return [
 
     'debug'=>env('API_CLIENT_DEBUG', false),
 
+    'impersonator_id_session_variable'=>env('API_CLIENT_IMPERSONATOR_ID_SESSION_VARIABLE', 'impersonator_id'),
+
     'baseNamespace'=>env('API_CLIENT_BASE_NAMESPACE', 'Api'),
 
     'colorTools'=> [

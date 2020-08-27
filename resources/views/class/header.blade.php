@@ -8,7 +8,9 @@ namespace App\{{ \ApiClientTools\App\Api\Base::getBaseNamespace() }};
  */
 class {{ $class['name'] }} extends Base
 {
-
+@if(isset($class['internalModel']) and !empty($class['internalModel']))
+    protected static $internalModel = '{{ $class['internalModel'] }}';
+    @endif
 @foreach ($class['constants'] as $constant => $value)
 @if(is_string($value))
     const {{ $constant }} = '{{ $value }}';

@@ -206,18 +206,55 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
             throw new \Exception('Invalid identifier');
         }
 
-        $id = substr($identifier, 0, -32);
-        $user = static::getAuth($id);
+        try {
+            $user = static::findByIdentifier($identifier);
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
+        $auth = new static();
+
+        $user = static::getAuth($user[$auth->authIdentifierName]);
 
         if (!$user) {
-            throw new \Exception('Wrong identifier');
+            throw new \Exception('Problem retrieving the user');
         }
 
-        if ($user->identifier == $identifier) {
-            return $user;
+        return $user;
+    }
+
+    public function getImpersonator()
+    {
+        $id = session()->get(config('api-client.impersonator_id_session_variable', 'impersonator_id'));
+        if (!is_null($id)) {
+            return static::getAuthData($id);
         } else {
-            throw new \Exception('Fake identifier');
+            return null;
         }
     }
 
+    /**
+     * Starts impersonating user by id
+     * @param $userId
+     */
+    public static function impersonateLogin($userId)
+    {
+        $currentUserId = \Auth::id();
+        if ($currentUserId) {
+            $canImpersonate = static::checkImpersonate($currentUserId, $userId);
+            \Session::put(config('api-client.impersonator_id_session_variable', 'impersonator_id'), $currentUserId);
+            \Auth::loginUsingId($userId);
+        }
+    }
+
+    /**
+     * Returns from the impersonated state
+     */
+    public static function impersonateReturn()
+    {
+        $currentUserId = \Auth::id();
+        $impersonatorId = \Session::pull(config('api-client.impersonator_id_session_variable', 'impersonator_id'));
+        if ($currentUserId and $impersonatorId) {
+            \Auth::loginUsingId($impersonatorId);
+        }
+    }
 }
