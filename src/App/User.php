@@ -24,7 +24,8 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
         foreach($user as $param=>$value) {
             $auth->{$param} = $value;
         }
-        $auth->identifier = $auth->getIdentifier();
+
+        $auth->impersonator = $auth->getImpersonator();
 
         return $auth;
     }
@@ -190,16 +191,6 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
         }
     }
 
-    public function getIdentifierAttribute()
-    {
-        return $this->getIdentifier();
-    }
-
-    public function getIdentifier()
-    {
-        return $this->{$this->authIdentifierName}.md5($this->{$this->authIdentifierName}.'-'.$this->created_at);
-    }
-
     public static function getByIdentifier(string $identifier)
     {
         if (strlen($identifier) < 33) {
@@ -243,6 +234,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
             $canImpersonate = static::checkImpersonate($currentUserId, $userId);
             \Session::put(config('api-client.impersonator_id_session_variable', 'impersonator_id'), $currentUserId);
             \Auth::loginUsingId($userId);
+            return true;
         }
     }
 

@@ -297,7 +297,7 @@ class Base
         $sessionId = \Session::get((\Auth::guard('web')->getName()));
         if(static::getConfig()['sendAuth'] and $sessionId) {
             $requestHeader[] = 'x-auth-id: '.$sessionId;
-            $impersonatorId = \Session::get('impersonator_id');
+            $impersonatorId = \Session::get(static::getConfig()['impersonator_id_session_variable']);
             if($impersonatorId) {
                 $requestHeader[] = 'x-auth-impersonator-id: '.$impersonatorId;
             }
