@@ -198,10 +198,10 @@ class Base
 
     /**
      * Identifies in the response paginations, thumbnails, images etc
-     * @param array $responseData
+     * @param $responseData
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    protected static function identifyObjects(array $responseData)
+    protected static function identifyObjects($responseData)
     {
         $autoDetectColorTools = static::getConfig()['colorTools']['autoDetect'];
 
