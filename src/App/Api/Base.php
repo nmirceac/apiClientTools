@@ -303,6 +303,11 @@ class Base
             }
         }
 
+        if(isset(static::getConfig()['endpoint']['ignoreSslErrors']) and static::getConfig()['endpoint']['ignoreSslErrors']) {
+            curl_setopt($session, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($session, CURLOPT_SSL_VERIFYPEER, true);
+        }
+
         curl_setopt($session, CURLOPT_HTTPHEADER, $requestHeader);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);

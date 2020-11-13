@@ -4,6 +4,7 @@ return [
     'endpoint'=> [
         'baseUrl'=>env('API_CLIENT_BASE_URL', null),
         'secret'=>env('API_CLIENT_SECRET', null),
+        'ignoreSslErrors'=>env('API_CLIENT_IGNORE_SSL_ERRORS', false),
     ],
 
     'sendAuth'=>env('API_CLIENT_SEND_AUTH', true),
