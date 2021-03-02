@@ -107,6 +107,11 @@ class ApiThumbnail
         return $this;
     }
 
+    public function setCropAnchor($anchor)
+    {
+        return $this;
+    }
+
     /**
      * Publishes an image and returns it's path
      * @param string $type

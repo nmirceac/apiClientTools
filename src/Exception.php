@@ -33,6 +33,15 @@ class Exception extends \Exception
         $this->rawResponse = $rawResponse;
         $this->data = $data;
 
+        if(App\Api\Base::getConfig()['ray_thumbnails'] and function_exists('ray')) {
+            ray('API EXCEPTION', [
+                'message'=>$message,
+                'code'=>$code,
+                'data'=>$data,
+                'rawWesponse'=>$rawResponse,
+            ])->red();
+        }
+
         parent::__construct($message, $code);
     }
 

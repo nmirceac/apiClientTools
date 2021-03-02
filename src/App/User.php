@@ -4,6 +4,58 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
 {
     public $authIdentifierName = 'id';
 
+    public static function getAuthCachingTime()
+    {
+        return isset(Api\Base::getConfig()['authCaching']) ? (int) Api\Base::getConfig()['authCaching'] : 0;
+    }
+
+    public static function getCacheKey($id)
+    {
+        return 'ApiAuthData-'.$id;
+    }
+
+    public static function postRequest(string $endpoint, $params = [], $data = [])
+    {
+        $data = parent::postRequest($endpoint, $params, $data);
+
+        // clear existing user cache if enabled
+        $authCaching = self::getAuthCachingTime();
+        $key = null;
+        if(isset($params[0]) and !empty($params[0])) {
+            $key = self::getCacheKey($params[0]);
+        }
+
+        if($authCaching and $key) {
+            \Cache::forget($key);
+        }
+        // return the data
+
+        return $data;
+    }
+
+    public static function getAuthData(int $id, array $data = [])
+    {
+        if(empty($id)) {
+            return null;
+        }
+
+        $authCaching = self::getAuthCachingTime();
+        $key = self::getCacheKey($id);
+        if($authCaching) {
+            $authData = \Cache::get($key);
+        }
+
+        if(is_null($authData)) {
+            $authData = parent::getAuthData($id, $data);
+
+            if(!empty($authData) and $authCaching) {
+                \Cache::put($key, $authData, $authCaching);
+            }
+        }
+
+        return $authData;
+    }
+
     public static function getAuth($id)
     {
         if(empty($id)) {

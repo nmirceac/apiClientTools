@@ -8,9 +8,13 @@ return [
     ],
 
     'sendAuth'=>env('API_CLIENT_SEND_AUTH', true),
+    'authCaching'=>env('API_CLIENT_AUTH_CACHE_TIMEOUT', 0),
+
     'caching'=>env('API_CLIENT_CACHE_TIMEOUT', 0),
 
     'debug'=>env('API_CLIENT_DEBUG', false),
+    'ray'=>env('API_CLIENT_RAY', false),
+    'ray_thumbnails'=>env('API_CLIENT_RAY_THUMBNAILS', false),
 
     'impersonator_id_session_variable'=>env('API_CLIENT_IMPERSONATOR_ID_SESSION_VARIABLE', 'impersonator_id'),
 

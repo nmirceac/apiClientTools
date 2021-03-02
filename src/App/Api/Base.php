@@ -174,10 +174,11 @@ class Base
             } else {
                 $data = [];
             }
+            $data['class'] = static::class;
             $data['errorMessage'] = $response['message'];
             $data['responseInfo'] = $responseInfo;
 
-            throw new \ApiClientTools\Exception(static::class.' API response exception '.$responseInfo['http_code'].': '.$response['message'], $responseInfo['http_code'], $json, $data);
+            throw new \ApiClientTools\Exception('API response exception '.$responseInfo['http_code'].': '.$response['message'], $responseInfo['http_code'], $json, $data);
         }
 
         $data = null;
@@ -222,6 +223,12 @@ class Base
                         and in_array($value['type'], ['jpeg', 'png']))
                     {
                         $responseData[$key] = \ApiClientTools\App\ApiImageStore::buildFromArray($value);
+                        if(static::getConfig()['ray_thumbnails'] and function_exists('ray')) {
+                            if($key=='thumbnail') {
+                                ray($responseData[$key])->blue();
+                                ray()->image($responseData[$key]->getUrl(function(\ColorTools\Image $image) { $image->fit(250, 250); }))->blue();
+                            }
+                        }
                     } else if($key=='thumbnail' and isset($value['model']) and isset($value['modelId'])) {
                         $responseData[$key] = \ApiClientTools\App\ApiThumbnail::buildFromArray($value);
                     } else {
@@ -338,7 +345,8 @@ class Base
         }
 
         if(is_null($response)) {
-            $session = static::getCurlSession(self::buildUrl($endpoint, $params, $data));
+            $url = self::buildUrl($endpoint, $params, $data);
+            $session = static::getCurlSession($url);
             $response = curl_exec($session);
             $responseInfo = curl_getinfo($session);
             curl_close($session);
@@ -349,7 +357,38 @@ class Base
             }
         }
 
-        $endtime = microtime(true) - $start;
+        $duration = microtime(true) - $start;
+
+        if(static::getConfig()['ray'] and function_exists('ray')) {
+            $cached = false;
+            if(!isset($url)) {
+                $response = null;
+                $responseInfo = null;
+                $cached = true;
+                $url = self::buildUrl($endpoint, $params, $data);
+            }
+
+            $sessionId = \Session::get((\Auth::guard('web')->getName()));
+            if(static::getConfig()['sendAuth'] and $sessionId) {
+                $userId=$sessionId;
+                $impersonatorId = \Session::get(static::getConfig()['impersonator_id_session_variable']);
+            } else {
+                $userId=null;
+                $impersonatorId=null;
+            }
+
+            ray('GET REQUEST - '.$url, [
+                'duration'=>$duration,
+                'endpoint'=>$endpoint,
+                'params'=>$params,
+                'data'=>$data,
+                'userId'=>$userId,
+                'impersonatorId'=>$impersonatorId,
+                'cached'=>$cached,
+                'response'=>$response,
+                'responseInfo'=>$responseInfo,
+            ])->blue();
+        }
 
         return $response;
     }
@@ -364,7 +403,10 @@ class Base
      */
     public static function postRequest(string $endpoint, $params=[], $data=[])
     {
-        $session = static::getCurlSession(self::buildUrl($endpoint, $params));
+        $start=microtime(true);
+
+        $url = self::buildUrl($endpoint, $params);
+        $session = static::getCurlSession($url);
         curl_setopt ($session, CURLOPT_POST, true);
         if(!empty($data)) {
             curl_setopt ($session, CURLOPT_POSTFIELDS, json_encode($data));
@@ -372,6 +414,31 @@ class Base
         $response = curl_exec($session);
         $responseInfo = curl_getinfo($session);
         curl_close($session);
+
+        $duration = microtime(true) - $start;
+
+        if(static::getConfig()['ray'] and function_exists('ray')) {
+            $sessionId = \Session::get((\Auth::guard('web')->getName()));
+            if(static::getConfig()['sendAuth'] and $sessionId) {
+                $userId=$sessionId;
+                $impersonatorId = \Session::get(static::getConfig()['impersonator_id_session_variable']);
+            } else {
+                $userId=null;
+                $impersonatorId=null;
+            }
+
+
+            ray('POST REQUEST - '.$url, [
+                'duration'=>$duration,
+                'endpoint'=>$endpoint,
+                'params'=>$params,
+                'data'=>$data,
+                'userId'=>$userId,
+                'impersonatorId'=>$impersonatorId,
+                'response'=>$response,
+                'responseInfo'=>$responseInfo,
+            ])->blue();
+        }
 
         return self::processResponse($response, $responseInfo);
     }
