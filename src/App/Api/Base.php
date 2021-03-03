@@ -411,7 +411,7 @@ class Base
         return $response;
     }
 
-    protected static function getRayData($data)
+    public static function getRayData($data)
     {
         foreach($data as $param=>$value) {
             if(is_array($value)) {
@@ -422,7 +422,7 @@ class Base
         return $data;
     }
 
-    private static function getRayDataArray($array)
+    public static function getRayDataArray($array)
     {
         $maskValuesParam = [
             'password',
