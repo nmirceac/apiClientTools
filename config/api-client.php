@@ -15,6 +15,7 @@ return [
     'debug'=>env('API_CLIENT_DEBUG', false),
     'ray'=>env('API_CLIENT_RAY', false),
     'ray_thumbnails'=>env('API_CLIENT_RAY_THUMBNAILS', false),
+    'ray_response_trim'=>env('API_CLIENT_RAY_RESPONSE_TRIM', 0),
 
     'impersonator_id_session_variable'=>env('API_CLIENT_IMPERSONATOR_ID_SESSION_VARIABLE', 'impersonator_id'),
 

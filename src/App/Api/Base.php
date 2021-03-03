@@ -225,7 +225,7 @@ class Base
                         $responseData[$key] = \ApiClientTools\App\ApiImageStore::buildFromArray($value);
                         if(static::getConfig()['ray_thumbnails'] and function_exists('ray')) {
                             if($key=='thumbnail') {
-                                ray($responseData[$key])->blue();
+                                //ray($responseData[$key])->blue();
                                 ray()->image($responseData[$key]->getUrl(function(\ColorTools\Image $image) { $image->fit(250, 250); }))->blue();
                             }
                         }
@@ -360,10 +360,14 @@ class Base
         $duration = microtime(true) - $start;
 
         if(static::getConfig()['ray'] and function_exists('ray')) {
+            $trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 6);
+
+            $significantTrace = $trace[1];
+            $title = self::getTitlePartsFromSignificantTrace('API GET', $significantTrace);
+
+
             $cached = false;
             if(!isset($url)) {
-                $response = null;
-                $responseInfo = null;
                 $cached = true;
                 $url = self::buildUrl($endpoint, $params, $data);
             }
@@ -377,20 +381,94 @@ class Base
                 $impersonatorId=null;
             }
 
-            ray('GET REQUEST - '.$url, [
-                'duration'=>$duration,
-                'endpoint'=>$endpoint,
-                'params'=>$params,
-                'data'=>$data,
-                'userId'=>$userId,
-                'impersonatorId'=>$impersonatorId,
+            $payloadResponse = $cached ? null : $response;
+            $payloadResponseInfo = $cached ? null : $responseInfo;
+
+
+            if(static::getConfig()['ray_response_trim'] and isset($payloadResponseInfo['size_download']) and $payloadResponseInfo['size_download'] > static::getConfig()['ray_response_trim']) {
+                $payloadResponse = substr(json_encode($payloadResponse), 0, static::getConfig()['ray_response_trim']).'...';
+            }
+
+            $rayPayload = [
+                'request'=>[
+                    'endpoint'=>$endpoint,
+                    'params'=>$params,
+                    'url'=>$url,
+                    'data'=>self::getRayData($data),
+                    'userId'=>$userId,
+                    'impersonatorId'=>$impersonatorId,
+                ],
+                'trace'=>$trace,
                 'cached'=>$cached,
-                'response'=>$response,
-                'responseInfo'=>$responseInfo,
-            ])->blue();
+                'duration'=>$duration,
+                'response'=>$payloadResponse,
+                'responseInfo'=>$payloadResponseInfo,
+            ];
+
+            ray(implode(' - ', $title), $rayPayload)->blue();
         }
 
         return $response;
+    }
+
+    protected static function getRayData($data)
+    {
+        foreach($data as $param=>$value) {
+            if(is_array($value)) {
+                $data[$param] = self::getRayDataArray($value);
+            }
+        }
+
+        return $data;
+    }
+
+    private static function getRayDataArray($array)
+    {
+        $maskValuesParam = [
+            'password',
+            'Password',
+            'urlBase64',
+            'content',
+        ];
+
+        foreach($array as $param=>$value) {
+            if(is_array($value)) {
+                $request[$param] = self::getRayDataArray($value);
+            }
+
+            if(in_array($param, $maskValuesParam)) {
+                $request[$param] = '...';
+            }
+        }
+
+        return $array;
+    }
+
+    /**
+     * Return titles from label and trace information
+     * @param $label
+     * @param $significantTrace
+     * @return array
+     */
+    public static function getTitlePartsFromSignificantTrace($label, $significantTrace)
+    {
+        $title[] = strtoupper(config('app.name'));
+        $title[] = $label;
+        if(isset($significantTrace['class']) and isset($significantTrace['function'])) {
+            $title[] = $significantTrace['class'];
+            $title[] = $significantTrace['function'];
+
+            if(isset($significantTrace['args']) and !empty($significantTrace['args'])) {
+                foreach($significantTrace['args'] as $arg) {
+                    if(empty($arg) or is_array($arg)) {
+                        continue;
+                    }
+                    $title[] = $arg;
+                }
+            }
+        }
+
+        return $title;
     }
 
     /**
@@ -417,7 +495,13 @@ class Base
 
         $duration = microtime(true) - $start;
 
+        $response = self::processResponse($response, $responseInfo);
+
         if(static::getConfig()['ray'] and function_exists('ray')) {
+            $trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 6);
+            $significantTrace = $trace[1];
+            $title = self::getTitlePartsFromSignificantTrace('API POST', $significantTrace);
+
             $sessionId = \Session::get((\Auth::guard('web')->getName()));
             if(static::getConfig()['sendAuth'] and $sessionId) {
                 $userId=$sessionId;
@@ -427,20 +511,31 @@ class Base
                 $impersonatorId=null;
             }
 
+            $payloadResponse = $response;
 
-            ray('POST REQUEST - '.$url, [
+            if(static::getConfig()['ray_response_trim'] and isset($responseInfo['size_download']) and $responseInfo['size_download'] > static::getConfig()['ray_response_trim']) {
+                $payloadResponse = substr(json_encode($payloadResponse), 0, static::getConfig()['ray_response_trim']).'...';
+            }
+
+            $rayPayload = [
+                'request'=>[
+                    'endpoint'=>$endpoint,
+                    'params'=>$params,
+                    'url'=>$url,
+                    'data'=>self::getRayData($data),
+                    'userId'=>$userId,
+                    'impersonatorId'=>$impersonatorId,
+                ],
+                'trace'=>$trace,
                 'duration'=>$duration,
-                'endpoint'=>$endpoint,
-                'params'=>$params,
-                'data'=>$data,
-                'userId'=>$userId,
-                'impersonatorId'=>$impersonatorId,
-                'response'=>$response,
+                'response'=>$payloadResponse,
                 'responseInfo'=>$responseInfo,
-            ])->blue();
+            ];
+
+            ray(implode(' - ', $title), $rayPayload)->blue();
         }
 
-        return self::processResponse($response, $responseInfo);
+        return $response;
     }
 
     /**

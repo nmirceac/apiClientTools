@@ -34,16 +34,26 @@ class Exception extends \Exception
         $this->data = $data;
 
         if(App\Api\Base::getConfig()['ray'] and function_exists('ray')) {
-            ray('API EXCEPTION', [
+            $trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 10);
+
+            $significantTrace = $trace[3];
+            $title = App\Api\Base::getTitlePartsFromSignificantTrace('API EXCEPTION', $significantTrace);
+
+
+            $rayPayload = [
                 'message'=>$message,
-                'code'=>$code,
-                'data'=>$data,
-                'rawResponse'=>$rawResponse,
-                'trace'=>debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 4),
-            ])->red();
+                'clientMessage'=>$this->getClientMessage(),
+                'code'=>$this->getCode(),
+                'data'=>App\Api\Base::getRayData($this->getData()),
+                'responseInfo'=>$this->getResponseInfo(),
+                'rawResponse'=>$this->getRawResponse(),
+                'trace'=>$trace,
+            ];
+
+            ray(implode(' - ', $title), $rayPayload)->red();
         }
 
-        parent::__construct($message, $code);
+        return parent::__construct($message, $code);
     }
 
     /**
