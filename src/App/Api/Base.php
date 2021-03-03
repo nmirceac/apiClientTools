@@ -11,6 +11,7 @@ class Base
      * @var null
      */
     public static $caching = null;
+    public static $temporaryCaching = null;
 
     /**
      * @var bool
@@ -23,6 +24,12 @@ class Base
      */
     protected static function getCacheTimeout()
     {
+        if(!is_null(static::$temporaryCaching)) {
+            $temporaryCacheTimeout = static::$temporaryCaching;
+            static::$temporaryCaching = null;
+            return $temporaryCacheTimeout;
+        }
+
         if(is_null(static::$caching)) {
             return (int) static::getConfig()['caching'];
         }
@@ -36,7 +43,7 @@ class Base
      */
     public static function withoutCache()
     {
-        self::$caching = (int) 0;
+        self::$temporaryCaching = (int) 0;
         return new static;
     }
 
@@ -49,7 +56,7 @@ class Base
         if(is_null($timeout)) {
             $timeout = self::getCacheTimeout();
         }
-        self::$caching = (int) $timeout;
+        self::$temporaryCaching = (int) $timeout;
         return new static;
     }
 
@@ -336,12 +343,9 @@ class Base
         $caching = static::getCacheTimeout();
 
         $response = null;
-        if($caching)
-        {
-            $cacheKey = 'apiGet-'.json_encode([$endpoint, $params, $data]);
-            if(!self::$reCaching) {
-                $response = \Cache::get($cacheKey);
-            }
+        $cacheKey = 'apiGet-'.json_encode([$endpoint, $params, $data]);
+        if(!self::$reCaching) {
+            $response = \Cache::get($cacheKey);
         }
 
         if(is_null($response)) {
