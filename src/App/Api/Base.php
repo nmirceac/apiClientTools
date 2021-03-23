@@ -1,5 +1,7 @@
 <?php namespace ApiClientTools\App\Api;
 
+use Illuminate\Support\Facades\File as Filesystem;
+
 class Base
 {
     /**
@@ -317,9 +319,22 @@ class Base
             }
         }
 
-        if(isset(static::getConfig()['endpoint']['ignoreSslErrors']) and static::getConfig()['endpoint']['ignoreSslErrors']) {
+        /*
+         * When CURLOPT_SSL_VERIFYPEER is enabled, and the verification fails to prove that the certificate is authentic, the connection fails.
+         * When the option is zero, the peer certificate verification succeeds regardless.
+         *
+         * Authenticating the certificate is not enough to be sure about the server.
+         * You typically also want to ensure that the server is the server you mean to be talking to.
+         * Use CURLOPT_SSL_VERIFYHOST for that.
+         * The check that the host name in the certificate is valid for the host name you're connecting to is done independently of the CURLOPT_SSL_VERIFYPEER option.
+         */
+
+        if(isset(static::getConfig()['endpoint']['ignoreSslHost']) and static::getConfig()['endpoint']['ignoreSslHost']) {
             curl_setopt($session, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($session, CURLOPT_SSL_VERIFYPEER, true);
+        } else if(isset(static::getConfig()['endpoint']['ignoreSslErrors']) and static::getConfig()['endpoint']['ignoreSslErrors']) {
+            curl_setopt($session, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
         }
 
         curl_setopt($session, CURLOPT_HTTPHEADER, $requestHeader);
@@ -557,5 +572,109 @@ class Base
             'object'=>$object,
             'id'=>$id,
         ];
+    }
+
+    private static function checkMime($mime)
+    {
+        $mime = trim(strtolower($mime));
+        if($mime == 'image/svg') {
+            $mime = 'image/svg+xml';
+        }
+
+        return $mime;
+    }
+
+    /**
+     * Creates a file
+     * @param array $metadata
+     * @param string|null $contents
+     * @return \FileTools\File
+     * @throws \Exception
+     */
+    public static function createFilePayload(array $metadata, string $contents = null)
+    {
+        $validator = \Validator::make($metadata, [
+            'name' => 'required|string',
+            'mime' => 'required|string',
+            'extension' => 'required|string',
+            'size' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            throw new \Exception($validator->errors());
+        }
+
+        if (empty($contents)) {
+            throw new \Exception('Contents is empty');
+        }
+
+        $payload = $metadata;
+        $payload['content'] = base64_encode($contents);
+
+        return $payload;
+    }
+
+    /**
+     * Creates the file payload from path
+     * @param string $filePath
+     * @return \FileTools\File
+     * @throws \Exception
+     */
+    public static function createFileFromPath(string $filePath, string $role = 'files', int $order = 0)
+    {
+        if (!file_exists(($filePath))) {
+            throw new \Exception('File not found at path ' . $filePath . ' (' . base_path($filePath) . ')');
+        }
+
+        if (is_dir(($filePath))) {
+            throw new \Exception('The path ' . $filePath . ' resolves to a directory, not to a file');
+        }
+
+        $metadata['mime'] = Filesystem::mimeType($filePath);
+        $metadata['name'] = Filesystem::name($filePath);
+        $metadata['dirname'] = Filesystem::dirname($filePath);
+        $metadata['basename'] = Filesystem::basename($filePath);
+        $metadata['extension'] = Filesystem::extension($filePath);
+        $metadata['size'] = Filesystem::size($filePath);
+        $metadata['lastModified'] = date('Y-m-d H:i:s', Filesystem::lastModified($filePath));
+        $metadata['originalPath'] = $filePath;
+        $metadata['role'] = $role;
+        $metadata['order'] = $order;
+
+        return self::createFilePayload($metadata, Filesystem::get($filePath));
+    }
+
+    /**
+     * Create the file payload from a laravel request
+     * @param \Illuminate\Http\Request $request
+     * @param string $fileKey
+     * @return \FileTools\File|\Illuminate\Http\JsonResponse
+     * @throws \Exception
+     */
+    public static function createFileFromRequest(\Illuminate\Http\Request $request, string $fileKey = 'file', string $role = 'files', int $order = 0)
+    {
+        if (!$request->hasFile($fileKey)) {
+            return response()->json([
+                'error' => 'Missing file'
+            ]);
+        }
+
+        $fileInfo = $request->file($fileKey);
+
+        $metadata['mime'] = $fileInfo->getMimeType();
+        $metadata['name'] = $fileInfo->getClientOriginalName();
+        $metadata['basename'] = $fileInfo->getClientOriginalName();
+        $metadata['extension'] = $fileInfo->getClientOriginalExtension();
+        $metadata['size'] = $fileInfo->getSize();
+        $metadata['originalPath'] = $fileInfo->getRealPath();
+        $metadata['hash'] = md5_file($metadata['originalPath']);
+
+        if (!empty($metadata['extension'])) {
+            $metadata['name'] = substr($metadata['name'], 0, -(1 + strlen($metadata['extension'])));
+        }
+
+        $contents = file_get_contents($fileInfo->getRealPath());
+
+        return self::createFilePayload($metadata, $contents);
     }
 }

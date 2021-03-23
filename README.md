@@ -160,4 +160,26 @@ $thumbnail->modifyImagePublish(function($img) {
 // https://admin-collaboration.weanswer.it/images/45771d1cdfe109aa6e5b3fd48c925ebd-fi=1+-ft=400+270.jpeg
 ```
 
+## File payload helper methods
+
+Now you can easy attach FileTools compatible file payloads with two helper methods
+
+```php
+// you can create the payload from a file path
+$filePayloadFromPath=\App\Api\Project::createFileFromPath('/path/to/file.extension');
+// or from a request
+$filePayloadFromRequest=\App\Api\Extension::createFileFromRequest(request(), 'file');
+
+
+// you can also optionally specify the individual file role or order 
+$anotherFilePayload==\App\Api\Project::createFileFromPath('/path/to/another.file', 'guide', 1);
+
+// you can then just upload the files to the proper endpoing
+\App\Api\Endpoint::attachFile($id, ['files'=>[$filePayloadFromPath, $filePayloadFromRequest, $anotherFilePayload]]);
+
+// you can also create the file from string and populate your own metadata
+\App\Api\Endpoint::createFilePayload($metadata, $fileContents);
+
+$metadata should contain at least name, mime, extension and size
+```
 

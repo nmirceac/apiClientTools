@@ -169,4 +169,105 @@ class PublishCommand extends Command
             'methodParametersString'=>$methodParamsString, // arguments of the invoked method
         ];
     }
+
+    public static function getDotNetParametersStrings($method)
+    {
+        $parametersString = [];
+        $methodParamsString = [];
+        $postParamsString = [];
+        $methodPostParamsString = [];
+
+        foreach ($method['parameters'] as $param=>$parameter) {
+            if($parameter['type']=='float') {
+                $parameter['type'] = 'double';
+                $method['parameters'][$param] = $parameter;
+            }
+
+            $parameterString = $parameter['type'] . ' ' . $parameter['name'];
+            if($parameter['default']) {
+                if($parameter['type']=='string') {
+                    $parameterString.='=\''.$parameter['default'].'\'';
+                } else {
+                    $parameterString.='='.$parameter['default'];
+                }
+            }
+
+            $parametersString[] = $parameterString;
+
+            if($parameter['type']=='string') {
+                $methodParamsString[] = '{ "'.$parameter['name'].'", '.$parameter['name'].' }';
+            } else if($parameter['type']=='int') {
+                $methodParamsString[] = '{ "'.$parameter['name'].'", '.$parameter['name'].'.ToString() }';
+            } else if($parameter['type']=='double') {
+                $methodParamsString[] = '{ "'.$parameter['name'].'", '.$parameter['name'].'.ToString() }';
+            }
+        }
+
+        if(!in_array('POST', $method['route']['accepts'])) {
+            $parametersString[] = 'System.Collections.Generic.Dictionary<string, string> endpointUrlData = null';
+        }
+
+        //
+        if(!in_array('POST', $method['route']['accepts']) and isset($method['api']['supportsPagination']) and $method['api']['supportsPagination']) {
+            $parametersString[] = 'int page = 1';
+        }
+
+        $parametersString = implode(', ', $parametersString);
+
+        if (empty($methodParamsString)) {
+            $methodParamsString = ', null';
+        } else {
+            $methodParamsString = ', new System.Collections.Generic.Dictionary<string, string>() { '.implode(', ', $methodParamsString).' }';
+        }
+
+        foreach($method['api'] as $parameter=>$value)
+        {
+            if(strpos($parameter, 'postParam')===0) {
+                $postParam = trim(lcfirst(substr($parameter, 9)));
+                $postParamsString[] = 'dynamic ' . $postParam;
+                $methodPostParamsString[$value] = $postParam;
+            }
+        }
+
+        // post arguments of the published method
+        if (empty($postParamsString)) {
+            $postParamsString = 'dynamic endpointData = null';
+        } else {
+            $postParamsString = implode(', ', $postParamsString).', dynamic endpointData = null';
+        }
+
+        // arguments of the published method
+        if(!empty($parametersString)) {
+            $postParamsString = ', '.$postParamsString;
+        }
+
+        if(isset($method['api']['supportsPagination']) and $method['api']['supportsPagination']) {
+            //$methodPostParamsString[] = '\'page\'=>\ApiClientTools\App\Api\Base::page()';
+        }
+
+        // in body of the method
+        if (empty($methodPostParamsString)) {
+            $methodPostParamsString = '';
+        } else {
+            $methodPostParamsStringOutput = 'if(endpointData==null) {
+                endpointData = new System.Dynamic.ExpandoObject();
+            }'.PHP_EOL;
+            foreach($methodPostParamsString as $value=>$postParam) {
+                $methodPostParamsStringOutput.='            endpointData.'.$value.' = '.$postParam.';'.PHP_EOL;
+            }
+            $methodPostParamsString = $methodPostParamsStringOutput;
+        }
+
+        if(!in_array('POST', $method['route']['accepts']) and isset($method['api']['supportsPagination'])) {
+            $methodPostParamsString = 'if(endpointUrlData==null) {endpointUrlData = new System.Collections.Generic.Dictionary<string, string> { {"page", page.ToString()} }; }
+                else if (!endpointUrlData.ContainsKey("page")) { endpointUrlData.Add("page", page.ToString()); }'.PHP_EOL;
+        }
+
+        return [
+            'parametersString'=>$parametersString, // arguments of the published method
+            'postParamsString'=>$postParamsString, // post arguments of the published method
+            'methodBodyContent'=>$methodPostParamsString, // in the body of the method
+            'methodParametersString'=>$methodParamsString, // arguments of the invoked method
+        ];
+    }
 }
