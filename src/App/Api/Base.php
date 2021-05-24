@@ -329,12 +329,12 @@ class Base
          * The check that the host name in the certificate is valid for the host name you're connecting to is done independently of the CURLOPT_SSL_VERIFYPEER option.
          */
 
-        if(isset(static::getConfig()['endpoint']['ignoreSslHost']) and static::getConfig()['endpoint']['ignoreSslHost']) {
-            curl_setopt($session, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($session, CURLOPT_SSL_VERIFYPEER, true);
-        } else if(isset(static::getConfig()['endpoint']['ignoreSslErrors']) and static::getConfig()['endpoint']['ignoreSslErrors']) {
+        if(isset(static::getConfig()['endpoint']['ignoreSslErrors']) and static::getConfig()['endpoint']['ignoreSslErrors']) {
             curl_setopt($session, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
+        } else if(isset(static::getConfig()['endpoint']['ignoreSslHost']) and static::getConfig()['endpoint']['ignoreSslHost']) {
+            curl_setopt($session, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($session, CURLOPT_SSL_VERIFYPEER, true);
         }
 
         curl_setopt($session, CURLOPT_HTTPHEADER, $requestHeader);
