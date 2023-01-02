@@ -9,6 +9,7 @@ return [
     ],
 
     'sendAuth'=>env('API_CLIENT_SEND_AUTH', true),
+    'sendLocale'=>env('API_CLIENT_SEND_LOCALE', true),
     'authCaching'=>env('API_CLIENT_AUTH_CACHE_TIMEOUT', 0),
 
     'caching'=>env('API_CLIENT_CACHE_TIMEOUT', 0),

@@ -319,6 +319,10 @@ class Base
             }
         }
 
+        if(static::getConfig()['sendLocale']) {
+            $requestHeader[] = 'x-locale: '.\App::getLocale();
+        }
+
         /*
          * When CURLOPT_SSL_VERIFYPEER is enabled, and the verification fails to prove that the certificate is authentic, the connection fails.
          * When the option is zero, the peer certificate verification succeeds regardless.
