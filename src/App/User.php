@@ -11,7 +11,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
 
     public static function getCacheKey($id)
     {
-        return 'ApiAuthData-'.$id;
+        return 'ApiAuthData-'.self::getLocaleValue().'-'.$id;
     }
 
     public static function postRequest(string $endpoint, $params = [], $data = [])
@@ -41,6 +41,7 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
 
         $authCaching = self::getAuthCachingTime();
         $key = self::getCacheKey($id);
+        $authData = null;
         if($authCaching) {
             $authData = \Cache::get($key);
         }

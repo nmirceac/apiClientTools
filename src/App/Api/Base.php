@@ -297,6 +297,29 @@ class Base
         return $paginationArray;
     }
 
+    public static function getLocaleValue($default = 'en')
+    {
+        $locale = request('locale');
+
+        if(empty($locale)) {
+            $locale = \Session::get('locale');
+        }
+
+        if(empty($locale)) {
+            $locale = \Cookie::get('locale');
+        }
+
+        if(empty($locale)) {
+            $locale = app()->getLocale();
+        }
+
+        if(empty($locale)) {
+            $locale = $default;
+        }
+
+        return $locale;
+    }
+
     /**
      * Prepares a curl session
      * @param $url
@@ -320,7 +343,7 @@ class Base
         }
 
         if(static::getConfig()['sendLocale']) {
-            $requestHeader[] = 'x-locale: '.\App::getLocale();
+            $requestHeader[] = 'x-locale: '.static::getLocaleValue();
         }
 
         /*
