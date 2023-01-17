@@ -618,14 +618,22 @@ class Base
      * @return \FileTools\File
      * @throws \Exception
      */
-    public static function createFilePayload(array $metadata, string $contents = null)
+    public static function createFilePayload(array $metadata, string $contents = null, $isUrl = false)
     {
-        $validator = \Validator::make($metadata, [
-            'name' => 'required|string',
-            'mime' => 'required|string',
-            'extension' => 'required|string',
-            'size' => 'required|numeric'
-        ]);
+        if($isUrl) {
+            $validator = \Validator::make($metadata, [
+                'name' => 'required|string',
+                'extension' => 'required|string',
+            ]);
+        } else {
+            $validator = \Validator::make($metadata, [
+                'name' => 'required|string',
+                'mime' => 'required|string',
+                'extension' => 'required|string',
+                'size' => 'required|numeric'
+            ]);
+        }
+
 
         if ($validator->fails()) {
             throw new \Exception($validator->errors());
@@ -636,7 +644,18 @@ class Base
         }
 
         $payload = $metadata;
-        $payload['content'] = base64_encode($contents);
+
+        if($isUrl) {
+            // check if urlBase64 or just a url for download
+            if(substr(strtolower($contents), 0, 5)=='data:') {
+                $payload['urlBase64'] = $contents;
+            } else {
+                $payload['url'] = $contents;
+            }
+        } else {
+            $payload['contents'] = base64_encode($contents);
+        }
+
 
         return $payload;
     }
@@ -678,15 +697,13 @@ class Base
      * @return \FileTools\File|\Illuminate\Http\JsonResponse
      * @throws \Exception
      */
-    public static function createFileFromRequest(\Illuminate\Http\Request $request, string $fileKey = 'file', string $role = 'files', int $order = 0)
+    public static function createFileFromRequest(string $fileKey = 'file', string $role = 'files', int $order = 0)
     {
-        if (!$request->hasFile($fileKey)) {
-            return response()->json([
-                'error' => 'Missing file'
-            ]);
+        if (!request()->hasFile($fileKey)) {
+            throw new \Exception('Missing file');
         }
 
-        $fileInfo = $request->file($fileKey);
+        $fileInfo = request()->file($fileKey);
 
         $metadata['mime'] = $fileInfo->getMimeType();
         $metadata['name'] = $fileInfo->getClientOriginalName();
@@ -700,8 +717,81 @@ class Base
             $metadata['name'] = substr($metadata['name'], 0, -(1 + strlen($metadata['extension'])));
         }
 
+        $metadata['role'] = $role;
+        $metadata['order'] = $order;
+
         $contents = file_get_contents($fileInfo->getRealPath());
 
         return self::createFilePayload($metadata, $contents);
+    }
+
+    public static function createFileFromXhr(string $fileKey = 'file', string $role = 'files', int $order = 0)
+    {
+        $fileInfo = request($fileKey);
+
+        if (empty($fileKey)) {
+            throw new \Exception('Missing file');
+        }
+
+        if (!isset($fileInfo['urlBase64'])) {
+            throw new \Exception('Missing file content');
+        }
+
+        if (empty($fileInfo['urlBase64'])) {
+            throw new \Exception('Empty file content');
+        }
+
+        if (!isset($fileInfo['name'])) {
+            throw new \Exception('Missing file name');
+        }
+
+        if (empty($fileInfo['name'])) {
+            throw new \Exception('Empty file name');
+        }
+
+        $metadata['name'] = $fileInfo['name'];
+        $metadata['basename'] = $metadata['name'];
+
+        $name = explode('.', $metadata['name']);
+        if(count($name)>=2) {
+            $metadata['extension'] = array_pop($name);
+            $metadata['name'] = implode('.', $name);
+        } else {
+            $metadata['extension'] = '';
+        }
+
+        $metadata['role'] = $role;
+        $metadata['order'] = $order;
+
+        $contents = $fileInfo['urlBase64'];
+
+        return self::createFilePayload($metadata, $contents, true);
+    }
+
+    public static function createFileFromUrl(string $url = 'file', ?string $name = null, string $role = 'files', int $order = 0)
+    {
+        if (empty($url)) {
+            throw new \Exception('Missing url');
+        }
+
+        if(empty($name)) {
+            $name = substr($url, 1 + strrpos($url, '/'));
+        }
+
+        $metadata['url'] = $url;
+        $metadata['name'] = $name;
+
+        $name = explode('.', $metadata['name']);
+        if(count($name)>=2) {
+            $metadata['extension'] = array_pop($name);
+            $metadata['name'] = implode('.', $name);
+        } else {
+            $metadata['extension'] = '';
+        }
+
+        $metadata['role'] = $role;
+        $metadata['order'] = $order;
+
+        return self::createFilePayload($metadata, $url, true);
     }
 }
