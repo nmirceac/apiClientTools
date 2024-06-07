@@ -14,7 +14,7 @@ class {{ $class['name'] }} extends Base
 @foreach ($class['constants'] as $constant => $value)
 @if(is_string($value))
     const {{ $constant }} = '{{ $value }}';
-@elseif(!is_bool($value))
+@elseif(is_bool($value))
     const {{ $constant }} = {{ $value ? 'true' : 'false' }};
 @elseif(!is_array($value))
     const {{ $constant }} = {{ $value }};
