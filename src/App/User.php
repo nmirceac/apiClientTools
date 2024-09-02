@@ -4,9 +4,30 @@ class User extends \App\Api\User implements \Illuminate\Contracts\Auth\Authentic
 {
     public $authIdentifierName = 'id';
 
+    public static $authCaching = null;
+
     public static function getAuthCachingTime()
     {
-        return isset(Api\Base::getConfig()['authCaching']) ? (int) Api\Base::getConfig()['authCaching'] : 0;
+        if(is_null(self::$authCaching)) {
+            self::$authCaching = isset(Api\Base::getConfig()['authCaching']) ? (int) Api\Base::getConfig()['authCaching'] : 0;
+        }
+
+        return self::$authCaching;
+    }
+
+    public static function setAuthCachingTime(int $cachingTime)
+    {
+        self::$authCaching = $cachingTime;
+    }
+
+    public static function noCaching()
+    {
+        self::setAuthCachingTime(0);
+    }
+
+    public static function clearCache()
+    {
+        \Cache::forget(self::getCacheKey(\Auth::id()));
     }
 
     public static function getCacheKey($id)
