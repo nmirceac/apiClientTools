@@ -156,6 +156,10 @@ class Base
      */
     protected static function processResponse(string $json, $responseInfo = [])
     {
+        if(empty($responseInfo['primary_ip'])) {
+            throw new \ApiClientTools\Exception('Unable to resolve the requested endpoint\'s IP address: '.static::getConfig()['endpoint']['baseUrl'], 0, $json, ['responseInfo'=>$responseInfo]);
+        }
+
         if(empty($json)) {
             throw new \ApiClientTools\Exception('The response data is empty', 0, $json, ['responseInfo'=>$responseInfo]);
         }
